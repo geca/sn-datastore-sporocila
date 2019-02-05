@@ -4,6 +4,7 @@ import webapp2
 import jinja2
 import os
 from models import Sporocilo
+from google.appengine.api import users
 
 template_dir = os.path.join(os.path.dirname(__file__), "templates")
 jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir), autoescape=False)
@@ -15,13 +16,28 @@ class BaseHandler(webapp2.RequestHandler):
 
 class VnosHandler(BaseHandler):
     def get(self):
-        return self.render_template("vnos.html", {})
+
+        params = {}
+
+        user = users.get_current_user()
+        if user:
+            # Prijavljeni uporabnik
+            params["prijavljen"] = True
+            params["url"] = users.create_logout_url('/')
+            params["user"] = user
+        else:
+            # Neprijavljeni uporabnik
+            params["prijavljen"] = False
+            params["url"] = users.create_login_url('/')
+
+        return self.render_template("vnos.html", params)
 
 class RezultatHandler(webapp2.RequestHandler):
     def post(self):
         sporocilo = self.request.get("sporocilo")
 
-        sporocilo_db = Sporocilo(vnos=sporocilo)
+        user = users.get_current_user()
+        sporocilo_db = Sporocilo(vnos=sporocilo, avtor=user.email())
         sporocilo_db.put()
 
         self.redirect("/seznam")
@@ -29,10 +45,11 @@ class RezultatHandler(webapp2.RequestHandler):
 class SeznamHandler(webapp2.RequestHandler):
     def get(self):
 
-        sporocila = Sporocilo.query(Sporocilo.izbrisano == False).fetch()
-
+        params = {}
+        params["sporocila"] = Sporocilo.query(Sporocilo.izbrisano == False).fetch()
+        params["uporabnik"] = users.get_current_user()
         template = jinja_env.get_template("seznam.html")
-        return self.response.write(template.render({"sporocila": sporocila}))
+        return self.response.write(template.render(params))
 
 class PosameznoSporociloHandler(webapp2.RequestHandler):
     def get(self, sporocilo_id):

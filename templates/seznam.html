@@ -12,7 +12,9 @@
         <h1>Seznam sporočil</h1>
         {% for s in sporocila %}
             <p>
-                <a href="/sporocilo/{{ s.key.id() }}">{{ s.nastanek }} - {{ s.vnos }}</a>
+                <a href="/sporocilo/{{ s.key.id() }}">{{ s.avtor }}: {{ s.nastanek }} - {{ s.vnos }}</a>
+
+                {% if s.avtor == uporabnik.email() %}
 
                 <a class="btn btn-primary"
                    href="/sporocilo/{{ s.key.id() }}/uredi"
@@ -26,6 +28,7 @@
                    role="button">
                     Briši
                 </a>
+                {% endif %}
             </p>
         {% endfor %}
 
